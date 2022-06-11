@@ -48,8 +48,8 @@ I split the data using an 80-20 train-test split and determined the project’s 
 <h3>Data Pipeline Creation </h3>
 The player_df dataframe that I used throughout the project had multiple null values in the rows which would not allow me to run any proper classification or regression algorithms.
 
-<br>
-![Null Values](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Null%Values.png "Null Values")
+
+![Null Values](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Null%20Values.png "Null Values")
 <h4 align="center">Figure 1: Null values in multiple data columns</h4>
 
 In order to address this, pipelines were made to handle all columns within the dataset. This allowed for flexibility in the project in case I wanted to add more data columns in the future. Two different pipelines were used for the classification and regression portions of the project. For null values in numerical data columns, a Simple Imputation Transformer was used with a strategy of “mean.” This means that it would take the mean value of all other scores in that column and set the null value to that mean.  
@@ -66,11 +66,11 @@ A standard scaler was used to make sure all numerical data columns had means of 
 After dropping the unnecessary columns (such as Date) which I would not be using for this project and creating the ‘over_quality’ categorical column, there were 39 columns total in the player_df dataframe. Initially, I tried to make a correlation matrix with all 39 columns, but it was too much information and could not be interpreted in one visualization. So, I decided to only focus on the key 15 of the 39 variables for the correlation matrix to make it easier to process. I chose these 15 variables based on what I researched about FIFA Ratings and found were the most important factors from my own personal experience as a soccer player. The 15 variables I chose were overall_rating, attacking_work_rate, defensive_work_rate, heading_accuracy, dribbling, ball_control, sprint_speed, strength, vision, marking, stamina, finishing, agility, balance, and shot_power.
 
 
-<br>
+
 ![Correlation Matrix](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Correlation%20Matrix.png "Correlation Matrix")
 <h4 align="center">Figure 2: Data Correlation Matrix for Chosen Variables</h4>
 
-<br>
+
 ![Correlation Values](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Correlation%20Values.png "Correlation Values")
 <h4 align="center">Figure 3: Data Correlation Values for Chosen Variables</h4>
 
@@ -79,7 +79,7 @@ I was interested in the overall_quality of a player so I focused on which variab
 
 <h3>Visualizations of Variables of Interest</h3>
 
-<br>
+
 ![Histogram Plots](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Histograms.png "Histogram Plots")
 <h4 align="center">Figure 4: Histogram Plots of Main Data Variables</h4>
 
@@ -88,7 +88,7 @@ The visualizations above show the distribution of values for the variables overa
 <h3>Analysis of Variance (ANOVA)</h3>
 ANOVA is a statistical technique that is used to check if the means of two or more groups are significantly different from each other. I wanted to use ANOVA to investigate if there is a significant difference in scores of my variables of interest between the five groups of different players based on their overall_quality score. I conducted four ANOVA tests between overall_quality and each of the variables of interest (vision, ball_control, shot_power, stamina).
 
-<br>
+
 ![ANOVA Table](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/ANOVA.png "ANOVA Table")
 <h4 align="center">Figure 5: ANOVA Table to Test Differences in Tiers of Players</h4>
 
@@ -101,7 +101,7 @@ Linear regression is an approach for modeling the relationship between a depende
 
 From my analysis, I found that there was only 77.3% accuracy. Furthermore, the MSE score was around 6.9, implying that the average distance between the observed overall rating and the predicted ratings was around 6.9. Additionally, the RMSE score was 2.6, which implies that this model will predict a player’s overall rating wrong around 26% of the time. That is a fairly high frequency to have the model be incorrect.
 
-<br>
+
 ![Regression Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Regression%20Output.png "Regression Output")
 <h4 align="center">Figure 6: Regression Accuracy Scores</h4>
 
@@ -110,7 +110,7 @@ My findings suggest that the model is moderately good at predicting a player’s
 <h3>Classification</h3>
 Classification is a machine learning technique used to predict something (Y) given an input (X). In this project, I was interested in predicting the overall_quality of professional European soccer players using the other variables within the dataset. To find which classification methods produced the most accurate results, I evaluated the accuracy of seven different kinds of algorithms: Nearest Neighbors, Linear SVM, Decision Tree, Random Forest, Neural Net, AdaBoost, and Naive Bayes. The Linear SVM, Decision Tree, and Neural Net classifiers were the most accurate at predicting a player's overall_quality. The results are shown below in Figure 4.
 
-<br>
+
 ![Ensemble Classifier Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Ensemble%20Classifier%20Output.png "Ensemble Classifier Output")
 <h4 align="center">Figure 7: Classification Accuracy Scores</h4>
 
@@ -125,7 +125,7 @@ I then built a VotingClassifier, to get better predictions for player_ratings. A
 * Recall of 0.97
 * F1-score of 0.97
 
-<br>
+
 ![Voting Classifier Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Voting%20Classifier%20Output.png "Voting Classifier Output")
 <h4 align="center">Figure 8: Voting Classifier Scores</h4>
 
