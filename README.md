@@ -1,151 +1,219 @@
-# Predicting-Soccer-Player-Ratings
-ML model using various classification and regression models to predict soccer players overall ratings from different player attributes.
+# ⚽ Predicting Soccer Player Ratings
 
+![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.0+-orange?logo=scikit-learn&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-2.0+-150458?logo=pandas&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
 
+Regression and multi-class classification models to predict FIFA-style soccer player ratings from 33 in-game attributes. Built using the [European Soccer Database](https://www.kaggle.com/datasets/hugomathien/soccer) (~11K unique players after deduplication).
 
+---
 
-<h2>Introduction and Background</h2>
-I have been interested in soccer from a young age and love watching the sports. I even tried to pursue soccer at a higher, collegiate level and have had ratings associated with my level of play. Due to my interest in this data, I worked on building this project of predicting ratings for European Soccer Players.
+## Table of Contents
+- [Overview](#overview)
+- [Dataset](#dataset)
+- [Methodology](#methodology)
+- [Results](#results)
+- [Key Learnings & Improvements](#key-learnings--improvements)
+- [Setup](#setup)
+- [Project Structure](#project-structure)
 
+---
 
-<h2>Datasets Used</h2>
-For the purpose of this project, I will be only using the Player_Attributes table extracted from this[SQL dataset on Kaggle](https://www.kaggle.com/datasets/hugomathien/soccer). The Player_Attributes table contains the following 39 relevant columns: Date of row entry, Overall_rating (what I was trying to predict), Potential (their potential rating they can achieve), Preferred Foot, Attacking Rating, Defensive Rating, Crossing, Finishing, Heading Accuracy, Short Passing, Volleys, Dribbling, Curve, Free Kick Accuracy, Long passing, Ball Control, Acceleration, Sprint Speed, Agility, Reactions, Balance, Shot Power, Jumping, Stamina, Strength, Long Shots, Aggression, Interceptions, Positioning, Vision, Penalties, Marking, Standing Tackle, Sliding Tackle, Diving, Handling, Kicking, Positioning, Reflexes.
+## Overview
 
-I found the data particularly interesting because of how many statistics there were available for each player and I wanted to understand how each of these attributes affects or reflects on predicting a player’s overall rating and understanding what makes them a good soccer player.
+This project explores two predictive tasks on FIFA player attribute data:
 
+1. **Regression** — predict a player's numerical overall rating (44–94 scale)
+2. **Classification** — classify players into one of 5 quality tiers (Elite → Poor)
 
-<h2>Statement of Purpose</h2>
-The purpose of this project is to understand which factors are most influential in determining how good someone is at soccer and also to predict which professional player will be good at soccer. This can be accomplished by creating a model that can accurately predict the overall quality of a player given any of the relevant data columns that I have defined above. This type of model would be very valuable to managers of professional soccer teams to help teams assemble the best team by picking players who are predicted to be good. Additionally, it could help coaches understand how much attention each player needs by understanding their rating ahead of time.  
+The project was originally built as an undergraduate data science capstone and later substantially revised with stronger modeling practices: cross-validation, regularization, macro F1 as the primary classification metric, and explicit overfitting analysis.
 
-<h2>Main Objectives</h2>
-There are two main objectives for this project.
+---
 
-1) Regression Objective: correctly predict 85% of the player's overall rating score within a plus or minus 3 rating interval.
+## Dataset
 
-2) Classification Objective: correctly classify 85% or more of the players into tiers based on their overall quality, which I will define in the Creating Overall Quality Column section.
+**Source:** [Kaggle — European Soccer Database](https://www.kaggle.com/datasets/hugomathien/soccer)  
+**Table used:** `Player_Attributes.csv` (~184K rows, 42 columns)
 
-<h2>Data Cleaning and Preparation</h2>
+The raw table contains ~7–8 season snapshots per player. To avoid data leakage and repeated observations, only the **peak-rated snapshot** per player is kept, resulting in **11,060 unique players**.
 
-<h3>Multiple entries per player</h3>
-I realized that since there are multiple entries for each player due to the date column, it would be better to group the data frame for each player id and take the row with the player’s highest overall rating.
+**Feature categories:**
+- Technical (dribbling, ball control, crossing, finishing, etc.)
+- Physical (sprint speed, stamina, strength, agility, jumping)
+- Mental (vision, reactions, aggression, positioning)
+- Work rate (categorical: low / medium / high)
 
-<h3>Creating Overall Quality Column </h3>
-I created an ‘overall quality’ column that classifies the players into five total tiers of players. The highest tier will be denoted by a 1, while the lowest tier will be denoted by a 5. The tiers are defined within the following overall rating ranges:
+**Quality Tier definitions (classification target):**
 
-Overall Quality Scores:
+| Tier | Label | Rating Range | Players | % |
+|------|-------|-------------|---------|---|
+| 1 | Elite | ≥ 82 | 644 | 5.8% |
+| 2 | Good | 73 – 81 | 3,808 | 34.4% |
+| 3 | Average | 67 – 72 | 3,444 | 31.1% |
+| 4 | Below Average | 60 – 66 | 2,477 | 22.4% |
+| 5 | Poor | < 60 | 687 | 6.2% |
 
-* 1 → Overall Rating >= 82
-* 2 → Overall Rating >= 73, < 82
-* 3 → Overall Rating >= 67, < 73
-* 4 → Overall Rating >= 60, < 67
-* 5 → Overall Rating < 60
+![Rating Distribution](Images/rating_distribution.png)
 
-These overall quality ranges were arbitrarily chosen to somewhat match the distribution of the ‘overall_rating’ column. I used the value_counts() method to accurately break down the data into 5 evenly classification rows.
+---
 
-<h3>Splitting up data into testing and training</h3>
-I split the data using an 80-20 train-test split and determined the project’s accuracy by predicting it on the test data.
+## Methodology
 
-<h3>Data Pipeline Creation </h3>
-The player_df dataframe that I used throughout the project had multiple null values in the rows which would not allow me to run any proper classification or regression algorithms.
+### Data Cleaning
+- Deduplicated by keeping the highest-rated row per player (sort-then-deduplicate)
+- Removed GK-specific attributes (`gk_diving`, `gk_handling`, etc.) — near-zero for outfield players
+- Cleaned garbled work-rate values (`'stoc'`, `'le'`, `'y'` → `NaN`)
+- Median imputation for numeric columns; mode imputation for categoricals
 
+### Preprocessing Pipeline
+- `StandardScaler` on all numeric features
+- `OneHotEncoder` for categorical work-rate columns
+- Pipeline fitted **only on training data** — test set transformed separately (no leakage)
 
-![Null Values](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Null%20Values.png "Null Values")
-<h4 align="center">Figure 1: Null values in multiple data columns</h4>
+### Train/Test Split
+- **80/20 stratified split** (8,848 train / 2,212 test) — stratified on quality tier
+- 5-fold cross-validation on training set to validate performance before touching the test set
 
-In order to address this, pipelines were made to handle all columns within the dataset. This allowed for flexibility in the project in case I wanted to add more data columns in the future. Two different pipelines were used for the classification and regression portions of the project. For null values in numerical data columns, a Simple Imputation Transformer was used with a strategy of “mean.” This means that it would take the mean value of all other scores in that column and set the null value to that mean.  
+### Models
 
-<h3>One Hot Encoder
-One Hot Encoder was used to change all categorical data columns into numerical values which allowed the machine learning models to run and interpret the data correctly.
+**Regression:**
+| Model | Notes |
+|-------|-------|
+| Linear Regression | Baseline |
+| Ridge Regression | L2 regularization (α=10) |
+| Gradient Boosting | 200 estimators, max_depth=4, lr=0.1 |
 
-<h3>Standard Scaler
-A standard scaler was used to make sure all numerical data columns had means of 0 and standard deviations of 1. This allowed my machine learning models to run and interpret the data correctly.
+**Classification:**
+| Model | Notes |
+|-------|-------|
+| Logistic Regression | Linear baseline, max_iter=1000 |
+| K-Nearest Neighbors | k=7 |
+| Decision Tree | max_depth=8, min_samples_leaf=10 |
+| Random Forest | 200 trees, max_depth=10 |
+| Gradient Boosting | 200 estimators, max_depth=4, lr=0.1 |
+| Soft Voting Ensemble | LR + RF + GB combined |
 
-<h2>Exploratory Data Analysis</h2>
+### Evaluation Metrics
+- **Regression:** R², RMSE, MAE, 5-fold CV R², % predictions within ±3 rating points
+- **Classification:** Macro F1 (primary), per-class F1, accuracy, train/test gap (overfitting check)
 
-<h3>Correlation Matrix</h3>
-After dropping the unnecessary columns (such as Date) which I would not be using for this project and creating the ‘over_quality’ categorical column, there were 39 columns total in the player_df dataframe. Initially, I tried to make a correlation matrix with all 39 columns, but it was too much information and could not be interpreted in one visualization. So, I decided to only focus on the key 15 of the 39 variables for the correlation matrix to make it easier to process. I chose these 15 variables based on what I researched about FIFA Ratings and found were the most important factors from my own personal experience as a soccer player. The 15 variables I chose were overall_rating, attacking_work_rate, defensive_work_rate, heading_accuracy, dribbling, ball_control, sprint_speed, strength, vision, marking, stamina, finishing, agility, balance, and shot_power.
+> **Why macro F1 over accuracy?** With 5 unevenly sized classes, a naive model predicting "Average" every time would score ~31% accuracy. Macro F1 weights all classes equally, penalizing poor recall on the minority "Elite" tier.
 
+---
 
+## Exploratory Data Analysis
 
-![Correlation Matrix](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Correlation%20Matrix.png "Correlation Matrix")
-<h4 align="center">Figure 2: Data Correlation Matrix for Chosen Variables</h4>
+### Correlation Matrix
 
+The heatmap below shows pairwise correlations across 15 key outfield attributes. `potential` and `reactions` are most strongly correlated with `overall_rating` (0.84 and 0.77 respectively). `dribbling` and `ball_control` share the strongest inter-feature correlation (0.90).
 
-![Correlation Values](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Correlation%20Values.png "Correlation Values")
-<h4 align="center">Figure 3: Data Correlation Values for Chosen Variables</h4>
+![Correlation Matrix](Images/correlation_matrix.png)
 
-From the correlation matrix, I found that the variables dribbling and ball_control have the strongest correlation of 0.9. The variable pairs with the next strongest correlations are ball_control with shot_power, dribbling with finishing, and dribbling with shot_power. The strongest negative correlation was -0.35 between strength and agility, then -0.31 between strength and balance, and then -0.27 between marking and finishing.
-I was interested in the overall_quality of a player so I focused on which variables were most strongly correlated to it. The overall_rating column was used to create the overall_quality column so there was a strong correlation between the two, but I ignored it because I was more interested in how the other variables impacted overall_quality. I found that the variables with the strongest correlation to overall_quality, excluding overall_rating, in order are vision, ball_control, shot_power, and stamina.
+### Key Attributes by Quality Tier
 
-<h3>Visualizations of Variables of Interest</h3>
+Box plots confirm the ANOVA finding — vision, ball control, reactions, and shot power all shift clearly and consistently across tiers, giving classifiers strong separating signal.
 
+![Tier Boxplots](Images/tier_boxplots.png)
 
-![Histogram Plots](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Histograms.png "Histogram Plots")
-<h4 align="center">Figure 4: Histogram Plots of Main Data Variables</h4>
+---
 
-The visualizations above show the distribution of values for the variables overall_quality, overall_rating, agility, stamina, strength, and dribbling. I created the overall_quality variable to be a categorical version of the overall_rating variable, so it makes sense that they have similar distributions. The four other plots are included because they are the variables of interest related to overall_quality that were found from the correlation matrix. The distribution of the agility, stamina, strength, and dribbling variables are all slightly skewed to the left. The majority of the values for all four of those variables fall within the range of 60-80.
+## Results
 
-<h3>Analysis of Variance (ANOVA)</h3>
-ANOVA is a statistical technique that is used to check if the means of two or more groups are significantly different from each other. I wanted to use ANOVA to investigate if there is a significant difference in scores of my variables of interest between the five groups of different players based on their overall_quality score. I conducted four ANOVA tests between overall_quality and each of the variables of interest (vision, ball_control, shot_power, stamina).
+### Regression
 
+| Model | Test R² | CV R² (5-fold) | RMSE | MAE |
+|-------|---------|----------------|------|-----|
+| Linear Regression | 0.8240 | 0.8212 | 2.980 | 2.309 |
+| Ridge Regression | 0.8240 | 0.8212 | 2.981 | 2.309 |
+| **Gradient Boosting** | **0.9449** | **0.9379** | **1.667** | **1.205** |
 
-![ANOVA Table](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/ANOVA.png "ANOVA Table")
-<h4 align="center">Figure 5: ANOVA Table to Test Differences in Tiers of Players</h4>
+Gradient Boosting predicts overall ratings with **93.2% of predictions landing within ±3 rating points**, and an average miss of just 1.2 points. The close agreement between test R² (0.9449) and CV R² (0.9379) confirms minimal overfitting.
 
-The null hypothesis for each of the ANOVA tests was that there is no difference between the mean of a player’s vision, ball_control, shot_power, or stamina for the five groups of players based on their overall_quality. For all of the four ANOVAs, the p-value is less than the generally accepted significance level of 0.05. Therefore, in all four cases, I rejected the null hypothesis and can conclude that there is a statistically significant difference in the means of a player’s vision, ball_control, shot_power, and stamina based on which group of overall_quality they are in. In fact, all the p-values are either zero or extremely close to zero, which means the results are highly significant.
+![Regression Results](Images/regression_results.png)
 
-<h2>Main Findings</h2>
+### Feature Importance
 
-<h3>Regression</h3>
-Linear regression is an approach for modeling the relationship between a dependent variable and one or more independent variables. I used multiple linear regressions where the dependent variable was overall_rating to understand how the variable depends on other factors. The pipeline I created was used to prepare the data and fit a linear regression model to formulate predictions. I also worked towards creating an accuracy function to see whether the predicted overall rating was within plus or minus 3 of the actual overall rating.
+`potential` dominates feature importance (as expected — FIFA scouts set it independently but it tracks closely with current rating). `reactions` is the strongest pure skill predictor, confirming the EDA finding.
 
-From my analysis, I found that there was only 77.3% accuracy. Furthermore, the MSE score was around 6.9, implying that the average distance between the observed overall rating and the predicted ratings was around 6.9. Additionally, the RMSE score was 2.6, which implies that this model will predict a player’s overall rating wrong around 26% of the time. That is a fairly high frequency to have the model be incorrect.
+![Feature Importance](Images/feature_importance.png)
 
+### Classification
 
-![Regression Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Regression%20Output.png "Regression Output")
-<h4 align="center">Figure 6: Regression Accuracy Scores</h4>
+| Model | Train Macro F1 | Test Macro F1 | Test Accuracy | Overfit Gap |
+|-------|---------------|---------------|---------------|-------------|
+| Logistic Regression | 0.6787 | 0.6707 | 0.6980 | 0.0080 |
+| K-Nearest Neighbors | 0.7966 | 0.7157 | 0.7473 | 0.0809 |
+| Decision Tree | 0.7683 | 0.6750 | 0.7152 | 0.0933 |
+| Random Forest | 0.8704 | 0.7929 | 0.8345 | 0.0775 |
+| Gradient Boosting | 0.9878 | 0.8373 | 0.8553 | 0.1506 |
+| **Soft Voting Ensemble** | **0.9353** | **0.8284** | **0.8495** | **0.1070** |
 
-My findings suggest that the model is moderately good at predicting a player’s rating, given I have access to all the other data columns in the Player Attributes column.
+The Soft Voting Ensemble achieves **84.95% accuracy and 0.83 macro F1**. The hardest tier to classify is "Elite" (F1=0.79, recall=0.70) due to its small size — a strong candidate for SMOTE oversampling in future work.
 
-<h3>Classification</h3>
-Classification is a machine learning technique used to predict something (Y) given an input (X). In this project, I was interested in predicting the overall_quality of professional European soccer players using the other variables within the dataset. To find which classification methods produced the most accurate results, I evaluated the accuracy of seven different kinds of algorithms: Nearest Neighbors, Linear SVM, Decision Tree, Random Forest, Neural Net, AdaBoost, and Naive Bayes. The Linear SVM, Decision Tree, and Neural Net classifiers were the most accurate at predicting a player's overall_quality. The results are shown below in Figure 4.
+> Note: Random Forest generalizes more reliably than Gradient Boosting (overfit gap 0.08 vs 0.15), making it the safer choice if minimizing overfitting is the priority.
 
+![Confusion Matrix](Images/confusion_matrix.png)
 
-![Ensemble Classifier Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Ensemble%20Classifier%20Output.png "Ensemble Classifier Output")
-<h4 align="center">Figure 7: Classification Accuracy Scores</h4>
+---
 
-* Linear SVM - it is a supervised machine learning technique that analyzes data for classification. The algorithm creates a line that separates the data into different classes. It relatively works well when there is a clear margin of separation between classes. In this model, all classes were separated from each other, and there was no overlapping, which may be a reason for its high accuracy with the data.
-* Decision Tree - it is a supervised machine learning model where the data is continuously split according to a certain parameter and classified into nodes. It works well when there are certain features that contribute more to the predictions than others. In this case, data columns like “potential” may have had a high impact on calculating ratings. This may be the reason why it has such high accuracy with the data.
-* Neural Networks - it is a set of algorithms that are modeled loosely after the human brain and they are designed to recognize patterns within the dataset. It iterates for a predetermined number of iterations, called epochs. After each epoch, the cost function is analyzed to see where the model could be improved. This technique works well with large amounts of data so that might be why it performed so well with the dataset.
+## Key Learnings & Improvements
 
-I then built a VotingClassifier, to get better predictions for player_ratings. A VotingClassifier is a machine learning estimator that trains from various base models and then builds up predictions on the basis of aggregating the findings of each base estimator. For my VotingClassifier, I used the above-mentioned seven classifiers to get the final prediction accuracy, recall, precision, and f1-scores.
+This project was originally built as an undergraduate capstone. The revised version addresses several data science anti-patterns:
 
-* Final accuracy of 96.88%
-* Precision of 0.97
-* Recall of 0.97
-* F1-score of 0.97
+| Original Issue | Fix Applied |
+|---------------|-------------|
+| Accuracy as the only metric | Added macro F1, RMSE, MAE, R² |
+| No overfitting analysis | Train vs. test gap reported for every model |
+| No cross-validation | 5-fold CV on training set for all regression models |
+| Hard voting on 7 classifiers | Soft voting on top 3 calibrated models |
+| Mean imputation for all nulls | Median imputation for numeric (robust to skew) |
+| Decision Tree without regularization | Added `max_depth` and `min_samples_leaf` |
+| GK attributes included for outfield model | Dropped all `gk_*` columns |
+| Garbled work-rate values silently kept | Cleaned to NaN before encoding |
+| Raw HTML in notebook markdown cells | Clean Markdown throughout |
+| No feature importance analysis | GBM feature importances visualized |
 
+---
 
-![Voting Classifier Output](https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings/blob/main/Images/Voting%20Classifier%20Output.png "Voting Classifier Output")
-<h4 align="center">Figure 8: Voting Classifier Scores</h4>
+## Setup
 
-<h2>Overall Results</h2>
-Although the regression model’s accuracy only reached around 75% prediction accuracy, which was less than my 85% objective, the classification portion of this project was successful. I completed the objective and had higher than 85% accuracy.
+```bash
+git clone https://github.com/goel-mehul/Predicting-Soccer-Player-Ratings.git
+cd Predicting-Soccer-Player-Ratings
+pip install -r requirements.txt
+jupyter notebook Predicting_Soccer_Player_Ratings.ipynb
+```
 
-<h2>Statement of Limitations</h2>
-While working on this project, there were multiple limitations that I had to place to get the dataset to work effectively:
-* There were nearly ~40 relevant data columns used with hundreds of null values. This meant that I had to use imputation to fill in the null values, leading to a much lower accuracy score. By sourcing more full data, the models’ accuracy for classification and regression would most likely improve.
-* Each player had about seven rows of data attributed to them. This made the dataset very large. Thus, as a limitation, I decided to only include one row of data per player. My method for choosing which row to include was to find the row with the highest overall rating for each player. Doing this decreased the size of the data frame, making it easier for me to conduct my analysis, however, it may have resulted in lower model accuracy.
-* I wanted to create a pairplot for all variables, however, it took too long to execute. Instead, I had to create hist or count plots for the variables I determined to be most relevant.
-* The data was only limited for European professional soccer players for a set number of years. Thus I could not examine the models on data from professional soccer players in other parts of the world.
+Download `Player_Attributes.csv` from the [Kaggle dataset](https://www.kaggle.com/datasets/hugomathien/soccer) and place it in the `Data/` directory.
 
-<h2>Challenges Encountered</h2>
-* It took a lot of time to figure out how I should handle the data since there were multiple rows of data per player. Once I decided that I was going to take the record with the maximum overall rating per player, it was difficult to implement due to problems with null data types.
-* The large number of variables in the dataset created challenges throughout the data exploration phases of the project. I couldn’t create visualizations that encapsulated all the variables because it would be too confusing. Thus, I had to spend time thinking of the best way to remove some of the less relevant variables, while still creating effective visualizations showing important relationships and information.
-* The large number of variables also made it hard to understand which variables were influencing the predictions I created.
+---
 
-<h2>Recommendations for Future Work</h2>
-* The main next step for the project would be to use the model I have trained with the data to predict the ratings and quality of other professional soccer players. It would be interesting to see if the model could predict a player’s potential rating right before a season has ended and see if it matches the actual rating agencies within a reasonable margin of error.
-* Additionally, it would be good to understand the 5 least influential variables. After identifying those least important variables, it may be interesting to remove them to tune and increase the accuracy of the model.
-* While the project only used the Player Attributes table, it would have been interesting to tune the classification and regression models using more information from other tables within the European Soccer database I accessed, such as the “Team Attributes” or “Match” tables.
-* Lastly, using more complex imputation methods to fill in null values could be explored. For numerical values, I decided to use the mean of the specific column to fill its null values. However, maybe there are other strategies such as using median or creating my own apply functions that do a better job of accurately filling the null values.
+## Project Structure
+
+```
+Predicting-Soccer-Player-Ratings/
+├── Data/
+│   └── Player_Attributes.csv        # Raw dataset (download from Kaggle)
+├── Images/
+│   ├── rating_distribution.png
+│   ├── correlation_matrix.png
+│   ├── tier_boxplots.png
+│   ├── regression_results.png
+│   ├── feature_importance.png
+│   └── confusion_matrix.png
+├── Predicting_Soccer_Player_Ratings.ipynb
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Future Work
+
+- Separate GK-only model using the `gk_*` attribute columns
+- Apply SMOTE or cost-sensitive learning to improve recall on "Elite" (currently F1=0.79, recall=0.70)
+- Hyperparameter tuning via `Optuna` to close Gradient Boosting's 0.15 overfit gap
+- SHAP values for interpretable feature attribution on individual player predictions
+- Incorporate match-level and team-level features from other tables in the database
+- Deploy as a rating prediction API using FastAPI
